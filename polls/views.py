@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from django.template import loader
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.http.response import JsonResponse
 from django.utils import timezone
+from django.urls import reverse
 from polls.models import Choice, Question  # Import the model classes we just 
 # Create your views here.
 notfound_template = loader.get_template('http_404.html')
@@ -42,11 +43,55 @@ def detail(request, question_id):
 
 
 def results(request, question_id):
+	template = loader.get_template('polls/results.html')
+	template_path = 'polls/results.html'
+	context_dict = {}
+	question = get_object_or_404(Question, pk=question_id)
+	try:
+		# do somthing
+		context_dict['question'] = question
+		question.choice_set.all()
+	except (KeyError, Question.DoesNotExist):
+		# if fails then respond
+		return Http404('Something went wrong')
+	else:
+		# do something else
+		question.choice_set.all()
 	response = "You're looking at the results of question %s."
-	return HttpResponse(response % question_id)
+	return render(request, template_path, context_dict)
 
 def vote(request, question_id):
-	return HttpResponse("You're voting on question %s." % question_id)
+	#template = loader.get_template('polls/vote.html')
+	detail_template = loader.get_template('polls/detail.html')
+	#template_path = 'polls/vote.html'
+	detail_template_path = 'polls/detail.html'
+	context_dict = {}
+
+	question = get_object_or_404(Question, pk=question_id)
+	try:
+		selected_choice = question.choice_set.get(pk=request.POST['choice'])
+	except (KeyError, Choice.DoesNotExist):
+		# request.POST['choice'] will raise KeyError if choice wasn’t provided in POST data. 
+		# The above code checks for KeyError and redisplays the question form with an error message if choice isn’t given.
+		# redisplay the question voting form
+		context_dict = {
+			'question': question,
+			'error_message': "You didn't select a choice."
+		}
+		return render(request, detail_template_path, context_dict)
+	else:
+		# this block will not caught by exception when exception is raised
+		# F() objects assigned to model fields persist after saving the model instance and will be applied on each save(). For example:
+		# F() is used to avoid race condition
+		selected_choice.votes = F('votes') + 1
+		selected_choice.save()
+		# Be sure to refresh it if you need to access the field.
+		selected_choice.refresh_from_db()
+        # Always return an HttpResponseRedirect after successfully dealing
+        # with POST data. This prevents data from being posted twice if a
+        # user hits the Back button.
+
+	return HttpResponseRedirect(reverse('polls:polls_results_path', args=(question.id,)))
 
 def index_api(request):
 	json_r = build_index_api_data(request)
