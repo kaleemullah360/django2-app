@@ -1,0 +1,10 @@
+{% if question %}
+	<span>{{ question.id }}: <label>{{ question.question_text }}</label></span>
+	<ul>
+	{% for choice in question.choice_set.all %}
+	<li>{{choice.choice_text}}</li>
+	{% endfor %}
+	</ul>
+{% else %}
+	<p>Question does not exist.</p>
+{% endif %}
