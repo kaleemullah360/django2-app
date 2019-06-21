@@ -5,9 +5,28 @@ from django.http.response import JsonResponse
 from django.utils import timezone
 from django.urls import reverse
 from polls.models import Choice, Question  # Import the model classes we just 
+from django.views import generic
+from django.db.models import F
 # Create your views here.
 notfound_template = loader.get_template('http_404.html')
 notfound_template_path = 'http_404.html'
+
+
+class IndexView(generic.ListView):
+	template_name = 'polls/index_list_view.html'
+	context_object_name = 'latest_q'
+
+	def get_queryset(self):
+		"""Return the last five published questions."""
+		return Question.objects.order_by('-pub_date')[:5]
+
+class ResultsView(generic.DetailView):
+	model = Question
+	template_name = 'polls/results_detail_view.html'
+
+class DetailView(generic.DetailView):
+	model = Question
+	template_name = 'polls/detail_detail_view.html'
 
 def index(request):
 	template = loader.get_template('polls/index.html')
